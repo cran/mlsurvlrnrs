@@ -1,0 +1,438 @@
+---
+title: "rpart: Survival Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{rpart: Survival Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+# nolint start
+```
+
+```{r setup}
+library(mlexperiments)
+library(mlsurvlrnrs)
+```
+
+See [https://github.com/kapsner/mlsurvlrnrs/blob/main/R/learner_surv_rpart_cox.R](https://github.com/kapsner/mlsurvlrnrs/blob/main/R/learner_surv_rpart_cox.R) for implementation details.
+
+# Preprocessing
+
+## Import and Prepare Data
+
+```{r}
+dataset <- survival::colon |>
+  data.table::as.data.table() |>
+  na.omit()
+dataset <- dataset[get("etype") == 2, ]
+
+surv_cols <- c("status", "time", "rx")
+feature_cols <- colnames(dataset)[3:(ncol(dataset) - 1)]
+cat_vars <- c("sex", "obstruct", "perfor", "adhere", "differ", "extent",
+              "surg", "node4", "rx")
+```
+
+## General Configurations
+
+```{r}
+seed <- 123
+if (isTRUE(as.logical(Sys.getenv("_R_CHECK_LIMIT_CORES_")))) {
+  # on cran
+  ncores <- 2L
+} else {
+  ncores <- ifelse(
+    test = parallel::detectCores() > 4,
+    yes = 4L,
+    no = ifelse(
+      test = parallel::detectCores() < 2L,
+      yes = 1L,
+      no = parallel::detectCores()
+    )
+  )
+}
+options("mlexperiments.bayesian.max_init" = 10L)
+```
+
+## Generate Training- and Test Data
+
+```{r}
+split_vector <- splitTools::multi_strata(
+  df = dataset[, .SD, .SDcols = surv_cols],
+  strategy = "kmeans",
+  k = 4
+)
+
+data_split <- splitTools::partition(
+  y = split_vector,
+  p = c(train = 0.7, test = 0.3),
+  type = "stratified",
+  seed = seed
+)
+
+train_x <- data.matrix(
+  dataset[
+    data_split$train, .SD, .SDcols = setdiff(feature_cols, surv_cols[1:2])
+  ]
+)
+train_y <- survival::Surv(
+  event = (dataset[data_split$train, get("status")] |>
+             as.character() |>
+             as.integer()),
+  time = dataset[data_split$train, get("time")],
+  type = "right"
+)
+split_vector_train <- splitTools::multi_strata(
+  df = dataset[data_split$train, .SD, .SDcols = surv_cols],
+  strategy = "kmeans",
+  k = 4
+)
+
+
+test_x <- data.matrix(
+  dataset[data_split$test, .SD, .SDcols = setdiff(feature_cols, surv_cols[1:2])]
+)
+test_y <- survival::Surv(
+  event = (dataset[data_split$test, get("status")] |>
+             as.character() |>
+             as.integer()),
+  time = dataset[data_split$test, get("time")],
+  type = "right"
+)
+```
+
+## Generate Training Data Folds
+
+```{r}
+fold_list <- splitTools::create_folds(
+  y = split_vector_train,
+  k = 3,
+  type = "stratified",
+  seed = seed
+)
+```
+
+# Experiments
+
+## Prepare Experiments
+
+```{r}
+# required learner arguments, not optimized
+learner_args <- list(method = "exp")
+
+# set arguments for predict function and performance metric,
+# required for mlexperiments::MLCrossValidation and
+# mlexperiments::MLNestedCV
+predict_args <- NULL
+performance_metric <- c_index
+performance_metric_args <- NULL
+return_models <- FALSE
+
+# required for grid search and initialization of bayesian optimization
+parameter_grid <- expand.grid(
+  minsplit = seq(2L, 82L, 10L),
+  cp = seq(0.01, 0.1, 0.01),
+  maxdepth = seq(2L, 30L, 5L)
+)
+
+# reduce to a maximum of 10 rows
+if (nrow(parameter_grid) > 10) {
+  set.seed(123)
+  sample_rows <- sample(seq_len(nrow(parameter_grid)), 10, FALSE)
+  parameter_grid <- kdry::mlh_subset(parameter_grid, sample_rows)
+}
+
+# required for bayesian optimization
+parameter_bounds <- list(
+  minsplit = c(2L, 100L),
+  cp = c(0.01, 0.1),
+  maxdepth = c(2L, 30L)
+)
+optim_args <- list(
+  iters.n = ncores,
+  kappa = 3.5,
+  acq = "ucb"
+)
+```
+
+
+## Hyperparameter Tuning
+
+### Grid Search
+
+```{r}
+tuner <- mlexperiments::MLTuneParameters$new(
+  learner = LearnerSurvRpartCox$new(),
+  strategy = "grid",
+  ncores = ncores,
+  seed = seed
+)
+
+tuner$parameter_grid <- parameter_grid
+tuner$learner_args <- learner_args
+tuner$split_type <- "stratified"
+tuner$split_vector <- split_vector_train
+
+tuner$set_data(
+  x = train_x,
+  y = train_y,
+  cat_vars = cat_vars
+)
+
+tuner_results_grid <- tuner$execute(k = 3)
+#> 
+#> Parameter settings [=====================================================================>---------------------------------------------------------------------] 5/10 ( 50%)
+#> Parameter settings [==================================================================================>--------------------------------------------------------] 6/10 ( 60%)
+#> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
+#> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
+#> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+
+head(tuner_results_grid)
+#>    setting_id metric_optim_mean minsplit   cp maxdepth method
+#> 1:          1         0.6218275        2 0.07       22    exp
+#> 2:          1         0.6218275        2 0.07       22    exp
+#> 3:          1         0.6218275        2 0.07       22    exp
+#> 4:          1         0.6218275        2 0.07       22    exp
+#> 5:          1         0.6218275        2 0.07       22    exp
+#> 6:          1         0.6218275        2 0.07       22    exp
+```
+
+
+### Bayesian Optimization
+
+```{r}
+tuner <- mlexperiments::MLTuneParameters$new(
+  learner = LearnerSurvRpartCox$new(),
+  strategy = "bayesian",
+  ncores = ncores,
+  seed = seed
+)
+
+tuner$parameter_grid <- parameter_grid
+tuner$parameter_bounds <- parameter_bounds
+
+tuner$learner_args <- learner_args
+tuner$optim_args <- optim_args
+
+tuner$split_type <- "stratified"
+tuner$split_vector <- split_vector_train
+
+tuner$set_data(
+  x = train_x,
+  y = train_y,
+  cat_vars = cat_vars
+)
+
+tuner_results_bayesian <- tuner$execute(k = 3)
+#> 
+#> Registering parallel backend using 4 cores.
+
+head(tuner_results_bayesian)
+#>    Epoch setting_id minsplit   cp maxdepth gpUtility acqOptimum inBounds Elapsed     Score metric_optim_mean errorMessage method
+#> 1:     0          1        2 0.07       22        NA      FALSE     TRUE   0.991 0.6218275         0.6218275           NA    exp
+#> 2:     0          2       32 0.02       27        NA      FALSE     TRUE   1.009 0.6218275         0.6218275           NA    exp
+#> 3:     0          3       72 0.10        7        NA      FALSE     TRUE   0.999 0.6218275         0.6218275           NA    exp
+#> 4:     0          4       32 0.09       27        NA      FALSE     TRUE   1.010 0.6218275         0.6218275           NA    exp
+#> 5:     0          5       52 0.02       12        NA      FALSE     TRUE   0.071 0.6218275         0.6218275           NA    exp
+#> 6:     0          6        2 0.04        7        NA      FALSE     TRUE   0.065 0.6218275         0.6218275           NA    exp
+```
+
+## k-Fold Cross Validation
+
+```{r}
+validator <- mlexperiments::MLCrossValidation$new(
+  learner = LearnerSurvRpartCox$new(),
+  fold_list = fold_list,
+  ncores = ncores,
+  seed = seed
+)
+
+validator$learner_args <- tuner$results$best.setting[-1]
+
+validator$predict_args <- predict_args
+validator$performance_metric <- performance_metric
+validator$performance_metric_args <- performance_metric_args
+validator$return_models <- return_models
+
+validator$set_data(
+  x = train_x,
+  y = train_y,
+  cat_vars = cat_vars
+)
+
+validator_results <- validator$execute()
+#> 
+#> CV fold: Fold1
+#> 
+#> CV fold: Fold2
+#> 
+#> CV fold: Fold3
+
+head(validator_results)
+#>     fold performance minsplit   cp maxdepth method
+#> 1: Fold1   0.6202320        2 0.07       22    exp
+#> 2: Fold2   0.5903866        2 0.07       22    exp
+#> 3: Fold3   0.6548638        2 0.07       22    exp
+```
+
+
+## Nested Cross Validation
+
+### Inner Grid Search
+
+```{r}
+validator <- mlexperiments::MLNestedCV$new(
+  learner = LearnerSurvRpartCox$new(),
+  strategy = "grid",
+  fold_list = fold_list,
+  k_tuning = 3L,
+  ncores = ncores,
+  seed = seed
+)
+
+validator$parameter_grid <- parameter_grid
+validator$learner_args <- learner_args
+validator$split_type <- "stratified"
+validator$split_vector <- split_vector_train
+
+validator$predict_args <- predict_args
+validator$performance_metric <- performance_metric
+validator$performance_metric_args <- performance_metric_args
+validator$return_models <- return_models
+
+validator$set_data(
+  x = train_x,
+  y = train_y,
+  cat_vars = cat_vars
+)
+
+validator_results <- validator$execute()
+#> 
+#> CV fold: Fold1
+#> 
+#> Parameter settings [=====================================================================>---------------------------------------------------------------------] 5/10 ( 50%)
+#> Parameter settings [==================================================================================>--------------------------------------------------------] 6/10 ( 60%)
+#> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
+#> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
+#> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+#> CV fold: Fold2
+#> CV progress [=================================================================================================>-------------------------------------------------] 2/3 ( 67%)
+#> 
+#> Parameter settings [=====================================================================>---------------------------------------------------------------------] 5/10 ( 50%)
+#> Parameter settings [==================================================================================>--------------------------------------------------------] 6/10 ( 60%)
+#> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
+#> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
+#> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+#> CV fold: Fold3
+#> CV progress [===================================================================================================================================================] 3/3 (100%)
+#>                                                                                                                                                                              
+#> Parameter settings [==================================================================================>--------------------------------------------------------] 6/10 ( 60%)
+#> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
+#> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
+#> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+
+head(validator_results)
+#>     fold performance minsplit   cp maxdepth method
+#> 1: Fold1   0.6202320       42 0.02        2    exp
+#> 2: Fold2   0.5903866       42 0.02        2    exp
+#> 3: Fold3   0.6343591       42 0.02        2    exp
+```
+
+
+### Inner Bayesian Optimization
+
+```{r}
+validator <- mlexperiments::MLNestedCV$new(
+  learner = LearnerSurvRpartCox$new(),
+  strategy = "bayesian",
+  fold_list = fold_list,
+  k_tuning = 3L,
+  ncores = ncores,
+  seed = 312
+)
+
+validator$parameter_grid <- parameter_grid
+validator$learner_args <- learner_args
+validator$split_type <- "stratified"
+validator$split_vector <- split_vector_train
+
+
+validator$parameter_bounds <- parameter_bounds
+validator$optim_args <- optim_args
+
+validator$predict_args <- predict_args
+validator$performance_metric <- performance_metric
+validator$performance_metric_args <- performance_metric_args
+validator$return_models <- TRUE
+
+validator$set_data(
+  x = train_x,
+  y = train_y,
+  cat_vars = cat_vars
+)
+
+validator_results <- validator$execute()
+#> 
+#> CV fold: Fold1
+#> 
+#> Registering parallel backend using 4 cores.
+#> 
+#> CV fold: Fold2
+#> CV progress [=================================================================================================>-------------------------------------------------] 2/3 ( 67%)
+#> 
+#> Registering parallel backend using 4 cores.
+#> 
+#> CV fold: Fold3
+#> CV progress [===================================================================================================================================================] 3/3 (100%)
+#>                                                                                                                                                                              
+#> Registering parallel backend using 4 cores.
+
+head(validator_results)
+#>     fold performance minsplit   cp maxdepth method
+#> 1: Fold1   0.6202320        2 0.07       22    exp
+#> 2: Fold2   0.5903866       42 0.02        2    exp
+#> 3: Fold3   0.6548638       72 0.10        7    exp
+```
+
+
+## Holdout Test Dataset Performance
+
+### Predict Outcome in Holdout Test Dataset
+
+```{r}
+preds_rpart <- mlexperiments::predictions(
+  object = validator,
+  newdata = test_x
+)
+```
+
+### Evaluate Performance on Holdout Test Dataset
+
+```{r}
+perf_rpart <- mlexperiments::performance(
+  object = validator,
+  prediction_results = preds_rpart,
+  y_ground_truth = test_y
+)
+perf_rpart
+#>    model performance
+#> 1: Fold1   0.6132183
+#> 2: Fold2   0.5931751
+#> 3: Fold3   0.6272602
+```
+
+```{r include=FALSE}
+# nolint end
+```
