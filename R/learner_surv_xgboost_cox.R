@@ -18,6 +18,7 @@
 #' @examples
 #' \donttest{# execution time >2.5 sec
 #' # survival analysis
+#' Sys.setenv("OMP_THREAD_LIMIT" = 2)
 #'
 #' dataset <- survival::colon |>
 #'   data.table::as.data.table() |>
@@ -74,9 +75,8 @@
 #'   seed = seed
 #' )
 #' surv_xgboost_cox_optimizer$learner_args <- c(as.list(
-#'   data.table::data.table(param_list_xgboost[1, ], stringsAsFactors = FALSE)
-#' ),
-#' nrounds = 45L
+#'   param_list_xgboost[1, ]),
+#'   nrounds = 45L
 #' )
 #' surv_xgboost_cox_optimizer$performance_metric <- c_index
 #'
@@ -91,11 +91,11 @@
 #'
 #' @export
 #'
-LearnerSurvXgboostCox <- R6::R6Class( # nolint
+LearnerSurvXgboostCox <- R6::R6Class(
+  # nolint
   classname = "LearnerSurvXgboostCox",
   inherit = mllrnrs::LearnerXgboost,
   public = list(
-
     #' @description
     #' Create a new `LearnerSurvXgboostCox` object.
     #'
@@ -108,9 +108,11 @@ LearnerSurvXgboostCox <- R6::R6Class( # nolint
     #' @examples
     #' LearnerSurvXgboostCox$new(metric_optimization_higher_better = FALSE)
     #'
-    initialize = function(metric_optimization_higher_better) { # nolint
-      super$initialize(metric_optimization_higher_better =
-                         metric_optimization_higher_better)
+    initialize = function(metric_optimization_higher_better) {
+      # nolint
+      super$initialize(
+        metric_optimization_higher_better = metric_optimization_higher_better
+      )
       self$environment <- "mlsurvlrnrs"
       self$cluster_export <- surv_xgboost_cox_ce()
       private$fun_optim_cv <- surv_xgboost_cox_optimization
@@ -125,11 +127,12 @@ surv_xgboost_cox_ce <- function() {
 }
 
 
-surv_xgboost_cox_bsF <- function(...) { # nolint
+surv_xgboost_cox_bsF <- function(...) {
+  # nolint
 
   params <- list(...)
 
-  set.seed(seed)#, kind = "L'Ecuyer-CMRG")
+  set.seed(seed) #, kind = "L'Ecuyer-CMRG")
   bayes_opt_xgboost <- surv_xgboost_cox_optimization(
     x = x,
     y = y,
@@ -149,13 +152,13 @@ surv_xgboost_cox_bsF <- function(...) { # nolint
 
 # tune lambda
 surv_xgboost_cox_optimization <- function(
-    x,
-    y,
-    params,
-    fold_list,
-    ncores,
-    seed
-  ) {
+  x,
+  y,
+  params,
+  fold_list,
+  ncores,
+  seed
+) {
   stopifnot(
     inherits(x = y, what = "Surv"),
     is.list(params),

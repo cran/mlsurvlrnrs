@@ -52,13 +52,15 @@ data_split <- splitTools::partition(
 train_x <- model.matrix(
   ~ -1 + .,
   dataset[
-    data_split$train, .SD, .SDcols = setdiff(feature_cols, surv_cols[1:2])
+    data_split$train,
+    .SD,
+    .SDcols = setdiff(feature_cols, surv_cols[1:2])
   ]
 )
 train_y <- survival::Surv(
   event = (dataset[data_split$train, get("status")] |>
-             as.character() |>
-             as.integer()),
+    as.character() |>
+    as.integer()),
   time = dataset[data_split$train, get("time")],
   type = "right"
 )
@@ -75,8 +77,8 @@ test_x <- model.matrix(
 )
 test_y <- survival::Surv(
   event = (dataset[data_split$test, get("status")] |>
-             as.character() |>
-             as.integer()),
+    as.character() |>
+    as.integer()),
   time = dataset[data_split$test, get("time")],
   type = "right"
 )
@@ -127,7 +129,7 @@ parameter_bounds <- list(
   colsample_bytree = c(0.2, 1),
   min_child_weight = c(1L, 10L),
   learning_rate = c(0.1, 0.2),
-  max_depth =  c(1L, 10L)
+  max_depth = c(1L, 10L)
 )
 optim_args <- list(
   iters.n = ncores,
@@ -157,23 +159,24 @@ tuner$set_data(
 )
 
 tuner_results_grid <- tuner$execute(k = 3)
-#> 
+#>
 #> Parameter settings [=======================================================>-----------------------------------------------------------------------------------] 4/10 ( 40%)
 #> Parameter settings [=====================================================================>---------------------------------------------------------------------] 5/10 ( 50%)
 #> Parameter settings [==================================================================================>--------------------------------------------------------] 6/10 ( 60%)
 #> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
 #> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
 #> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
-#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)
 
 head(tuner_results_grid)
 #>    setting_id metric_optim_mean  nrounds subsample colsample_bytree min_child_weight learning_rate max_depth    objective eval_metric
-#> 1:          1          4.508734 40.00000       0.6              0.8                5           0.2         1 survival:aft aft-nloglik
-#> 2:          2          4.546383 39.33333       1.0              0.8                5           0.1         5 survival:aft aft-nloglik
-#> 3:          3          4.505510 69.33333       0.8              0.8                5           0.1         1 survival:aft aft-nloglik
-#> 4:          4          4.578441 19.33333       0.6              0.8                5           0.2         5 survival:aft aft-nloglik
-#> 5:          5          4.561942 38.33333       1.0              0.8                1           0.1         5 survival:aft aft-nloglik
-#> 6:          6          4.542217 37.66667       0.8              0.8                5           0.1         5 survival:aft aft-nloglik
+#>         <int>             <num>    <num>     <num>            <num>            <num>         <num>     <num>       <char>      <char>
+#> 1:          1          4.350527 30.33333       0.6              0.8                5           0.2         1 survival:aft aft-nloglik
+#> 2:          2          4.384429 40.00000       1.0              0.8                5           0.1         5 survival:aft aft-nloglik
+#> 3:          3          4.351162 65.66667       0.8              0.8                5           0.1         1 survival:aft aft-nloglik
+#> 4:          4          4.408632 19.66667       0.6              0.8                5           0.2         5 survival:aft aft-nloglik
+#> 5:          5          4.397901 40.66667       1.0              0.8                1           0.1         5 survival:aft aft-nloglik
+#> 6:          6          4.380873 42.66667       0.8              0.8                5           0.1         5 survival:aft aft-nloglik
 
 
 ## -----------------------------------------------------------------------------
@@ -201,24 +204,26 @@ tuner$set_data(
 )
 
 tuner_results_bayesian <- tuner$execute(k = 3)
-#> 
+#>
 #> Registering parallel backend using 4 cores.
 
 head(tuner_results_bayesian)
-#>    Epoch setting_id subsample colsample_bytree min_child_weight learning_rate max_depth gpUtility acqOptimum inBounds Elapsed     Score metric_optim_mean  nrounds
-#> 1:     0          1       0.6              0.8                5           0.2         1        NA      FALSE     TRUE   3.705 -4.509285          4.509285 41.00000
-#> 2:     0          2       1.0              0.8                5           0.1         5        NA      FALSE     TRUE   3.918 -4.542901          4.542901 41.66667
-#> 3:     0          3       0.8              0.8                5           0.1         1        NA      FALSE     TRUE   3.980 -4.506211          4.506211 82.33333
-#> 4:     0          4       0.6              0.8                5           0.2         5        NA      FALSE     TRUE   3.867 -4.582990          4.582990 22.33333
-#> 5:     0          5       1.0              0.8                1           0.1         5        NA      FALSE     TRUE   2.638 -4.559373          4.559373 42.33333
-#> 6:     0          6       0.8              0.8                5           0.1         5        NA      FALSE     TRUE   3.138 -4.548201          4.548201 44.00000
-#>    errorMessage    objective eval_metric
-#> 1:           NA survival:aft aft-nloglik
-#> 2:           NA survival:aft aft-nloglik
-#> 3:           NA survival:aft aft-nloglik
-#> 4:           NA survival:aft aft-nloglik
-#> 5:           NA survival:aft aft-nloglik
-#> 6:           NA survival:aft aft-nloglik
+#>    Epoch setting_id subsample colsample_bytree min_child_weight learning_rate max_depth gpUtility acqOptimum inBounds Elapsed
+#>    <num>      <int>     <num>            <num>            <num>         <num>     <num>     <num>     <lgcl>   <lgcl>   <num>
+#> 1:     0          1       0.6              0.8                5           0.2         1        NA      FALSE     TRUE   1.726
+#> 2:     0          2       1.0              0.8                5           0.1         5        NA      FALSE     TRUE   1.805
+#> 3:     0          3       0.8              0.8                5           0.1         1        NA      FALSE     TRUE   1.817
+#> 4:     0          4       0.6              0.8                5           0.2         5        NA      FALSE     TRUE   1.774
+#> 5:     0          5       1.0              0.8                1           0.1         5        NA      FALSE     TRUE   0.925
+#> 6:     0          6       0.8              0.8                5           0.1         5        NA      FALSE     TRUE   0.896
+#>        Score metric_optim_mean  nrounds errorMessage    objective eval_metric
+#>        <num>             <num>    <num>       <lgcl>       <char>      <char>
+#> 1: -4.345650          4.345650 27.66667           NA survival:aft aft-nloglik
+#> 2: -4.378685          4.378685 42.66667           NA survival:aft aft-nloglik
+#> 3: -4.349229          4.349229 49.00000           NA survival:aft aft-nloglik
+#> 4: -4.413895          4.413895 21.33333           NA survival:aft aft-nloglik
+#> 5: -4.400767          4.400767 40.66667           NA survival:aft aft-nloglik
+#> 6: -4.359158          4.359158 40.33333           NA survival:aft aft-nloglik
 
 
 ## -----------------------------------------------------------------------------
@@ -232,7 +237,7 @@ validator <- mlexperiments::MLCrossValidation$new(
 )
 
 validator$learner_args <- tuner$results$best.setting[-1]
-
+validator$learner_args$nrounds <- floor(validator$learner_args$nrounds)
 validator$predict_args <- predict_args
 validator$performance_metric <- performance_metric
 validator$performance_metric_args <- performance_metric_args
@@ -242,20 +247,20 @@ validator$set_data(
   x = train_x,
   y = train_y
 )
-
 validator_results <- validator$execute()
-#> 
+#>
 #> CV fold: Fold1
-#> 
+#>
 #> CV fold: Fold2
-#> 
+#>
 #> CV fold: Fold3
 
 head(validator_results)
-#>     fold performance subsample colsample_bytree min_child_weight learning_rate max_depth nrounds    objective eval_metric
-#> 1: Fold1   0.3477846 0.2882211        0.9747412                1     0.1124153         1      60 survival:aft aft-nloglik
-#> 2: Fold2   0.3601468 0.2882211        0.9747412                1     0.1124153         1      60 survival:aft aft-nloglik
-#> 3: Fold3   0.3585996 0.2882211        0.9747412                1     0.1124153         1      60 survival:aft aft-nloglik
+#>      fold performance subsample colsample_bytree min_child_weight learning_rate max_depth nrounds    objective eval_metric
+#>    <char>       <num>     <num>            <num>            <num>         <num>     <num>   <num>       <char>      <char>
+#> 1:  Fold1   0.3952192       0.6              0.8                5           0.2         1      27 survival:aft aft-nloglik
+#> 2:  Fold2   0.3510979       0.6              0.8                5           0.2         1      27 survival:aft aft-nloglik
+#> 3:  Fold3   0.3043296       0.6              0.8                5           0.2         1      27 survival:aft aft-nloglik
 
 
 ## -----------------------------------------------------------------------------
@@ -286,19 +291,19 @@ validator$set_data(
 )
 
 validator_results <- validator$execute()
-#> 
+#>
 #> CV fold: Fold1
-#> 
+#>
 #> Parameter settings [=======================================================>-----------------------------------------------------------------------------------] 4/10 ( 40%)
 #> Parameter settings [=====================================================================>---------------------------------------------------------------------] 5/10 ( 50%)
 #> Parameter settings [==================================================================================>--------------------------------------------------------] 6/10 ( 60%)
 #> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
 #> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
 #> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
-#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)
 #> CV fold: Fold2
 #> CV progress [=================================================================================================>-------------------------------------------------] 2/3 ( 67%)
-#> 
+#>
 #> Parameter settings [=========================================>-------------------------------------------------------------------------------------------------] 3/10 ( 30%)
 #> Parameter settings [=======================================================>-----------------------------------------------------------------------------------] 4/10 ( 40%)
 #> Parameter settings [=====================================================================>---------------------------------------------------------------------] 5/10 ( 50%)
@@ -306,23 +311,24 @@ validator_results <- validator$execute()
 #> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
 #> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
 #> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
-#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)
 #> CV fold: Fold3
 #> CV progress [===================================================================================================================================================] 3/3 (100%)
-#>                                                                                                                                                                              
+#>
 #> Parameter settings [=======================================================>-----------------------------------------------------------------------------------] 4/10 ( 40%)
 #> Parameter settings [=====================================================================>---------------------------------------------------------------------] 5/10 ( 50%)
 #> Parameter settings [==================================================================================>--------------------------------------------------------] 6/10 ( 60%)
 #> Parameter settings [================================================================================================>------------------------------------------] 7/10 ( 70%)
 #> Parameter settings [==============================================================================================================>----------------------------] 8/10 ( 80%)
 #> Parameter settings [============================================================================================================================>--------------] 9/10 ( 90%)
-#> Parameter settings [==========================================================================================================================================] 10/10 (100%)                                                                                                                                                                             
+#> Parameter settings [==========================================================================================================================================] 10/10 (100%)
 
 head(validator_results)
-#>     fold performance  nrounds subsample colsample_bytree min_child_weight learning_rate max_depth    objective eval_metric
-#> 1: Fold1   0.3609538 32.66667       0.6              0.8                5           0.2         1 survival:aft aft-nloglik
-#> 2: Fold2   0.3665939 31.33333       0.6              1.0                1           0.2         1 survival:aft aft-nloglik
-#> 3: Fold3   0.3549842 38.33333       0.6              1.0                1           0.2         1 survival:aft aft-nloglik
+#>      fold performance  nrounds subsample colsample_bytree min_child_weight learning_rate max_depth    objective eval_metric
+#>    <char>       <num>    <num>     <num>            <num>            <num>         <num>     <num>       <char>      <char>
+#> 1:  Fold1   0.3940442 32.66667       0.6              0.8                5           0.2         1 survival:aft aft-nloglik
+#> 2:  Fold2   0.3409029 29.66667       0.6              0.8                5           0.2         1 survival:aft aft-nloglik
+#> 3:  Fold3   0.3188261 54.33333       0.8              0.8                5           0.1         1 survival:aft aft-nloglik
 
 
 ## -----------------------------------------------------------------------------
@@ -357,26 +363,32 @@ validator$set_data(
 )
 
 validator_results <- validator$execute()
-#> 
+#>
 #> CV fold: Fold1
-#> 
+#>
 #> Registering parallel backend using 4 cores.
-#> 
+#>
 #> CV fold: Fold2
 #> CV progress [=================================================================================================>-------------------------------------------------] 2/3 ( 67%)
-#> 
+#>
 #> Registering parallel backend using 4 cores.
-#> 
+#>
 #> CV fold: Fold3
 #> CV progress [===================================================================================================================================================] 3/3 (100%)
-#>                                                                                                                                                                              
+#>
 #> Registering parallel backend using 4 cores.
 
 head(validator_results)
-#>     fold performance subsample colsample_bytree min_child_weight learning_rate max_depth  nrounds    objective eval_metric
-#> 1: Fold1   0.3480615 0.6000000        0.8000000                5     0.2000000         1 44.33333 survival:aft aft-nloglik
-#> 2: Fold2   0.3699332 0.6000000        1.0000000                1     0.2000000         1 36.66667 survival:aft aft-nloglik
-#> 3: Fold3   0.3522341 0.7604887        0.7889484                1     0.1695828         1 31.00000 survival:aft aft-nloglik
+#>      fold performance subsample colsample_bytree min_child_weight learning_rate max_depth  nrounds
+#>    <char>       <num>     <num>            <num>            <num>         <num>     <num>    <num>
+#> 1:  Fold1   0.3778285 0.2000000        0.8372285                1     0.1290960         1 46.66667
+#> 2:  Fold2   0.3532460 0.7222891        0.9914938                1     0.1085742         1 61.00000
+#> 3:  Fold3   0.3159590 0.6000000        1.0000000                1     0.2000000         1 28.66667
+#>       objective eval_metric
+#>          <char>      <char>
+#> 1: survival:aft aft-nloglik
+#> 2: survival:aft aft-nloglik
+#> 3: survival:aft aft-nloglik
 
 
 ## -----------------------------------------------------------------------------
@@ -393,10 +405,11 @@ perf_xgboost <- mlexperiments::performance(
   y_ground_truth = test_y
 )
 perf_xgboost
-#>    model performance
-#> 1: Fold1   0.3401763
-#> 2: Fold2   0.3213113
-#> 3: Fold3   0.3136183
+#>     model performance
+#>    <char>       <num>
+#> 1:  Fold1   0.3395226
+#> 2:  Fold2   0.3495002
+#> 3:  Fold3   0.3455662
 
 
 ## ----include=FALSE------------------------------------------------------------
