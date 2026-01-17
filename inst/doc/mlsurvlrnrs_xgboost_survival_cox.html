@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.12">
+<meta name="generator" content="quarto-1.9.16">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -246,8 +246,8 @@ text-decoration: underline; }
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.bayesian.max_init&quot;</span> <span class="ot">=</span> <span class="dv">10</span>L)</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.optim.xgb.nrounds&quot;</span> <span class="ot">=</span> <span class="dv">100</span>L)</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.optim.xgb.early_stopping_rounds&quot;</span> <span class="ot">=</span> <span class="dv">10</span>L)</span></code></pre></div>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.optim.xgb.nrounds&quot;</span> <span class="ot">=</span> <span class="dv">20</span>L)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.optim.xgb.early_stopping_rounds&quot;</span> <span class="ot">=</span> <span class="dv">5</span>L)</span></code></pre></div>
 </div>
 <h2 id="generate-training--and-test-data">Generate Training- and Test Data</h2>
 <div class="cell">
@@ -267,34 +267,36 @@ text-decoration: underline; }
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>train_x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(</span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> .,</span>
 <span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  dataset[</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    data_split<span class="sc">$</span>train, .SD, <span class="at">.SDcols =</span> <span class="fu">setdiff</span>(feature_cols, surv_cols[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>train_y <span class="ot">&lt;-</span> survival<span class="sc">::</span><span class="fu">Surv</span>(</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">event =</span> (dataset[data_split<span class="sc">$</span>train, <span class="fu">get</span>(<span class="st">&quot;status&quot;</span>)] <span class="sc">|&gt;</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>             <span class="fu">as.character</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>             <span class="fu">as.integer</span>()),</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> dataset[data_split<span class="sc">$</span>train, <span class="fu">get</span>(<span class="st">&quot;time&quot;</span>)],</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;right&quot;</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>split_vector_train <span class="ot">&lt;-</span> splitTools<span class="sc">::</span><span class="fu">multi_strata</span>(</span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">df =</span> dataset[data_split<span class="sc">$</span>train, .SD, <span class="at">.SDcols =</span> surv_cols],</span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;kmeans&quot;</span>,</span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">4</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>test_x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(</span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> .,</span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>  dataset[data_split<span class="sc">$</span>test, .SD, <span class="at">.SDcols =</span> <span class="fu">setdiff</span>(feature_cols, surv_cols[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])]</span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>test_y <span class="ot">&lt;-</span> survival<span class="sc">::</span><span class="fu">Surv</span>(</span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">event =</span> (dataset[data_split<span class="sc">$</span>test, <span class="fu">get</span>(<span class="st">&quot;status&quot;</span>)] <span class="sc">|&gt;</span></span>
-<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>             <span class="fu">as.character</span>() <span class="sc">|&gt;</span></span>
-<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>             <span class="fu">as.integer</span>()),</span>
-<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> dataset[data_split<span class="sc">$</span>test, <span class="fu">get</span>(<span class="st">&quot;time&quot;</span>)],</span>
-<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;right&quot;</span></span>
-<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    data_split<span class="sc">$</span>train,</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    .SD,</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">.SDcols =</span> <span class="fu">setdiff</span>(feature_cols, surv_cols[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>train_y <span class="ot">&lt;-</span> survival<span class="sc">::</span><span class="fu">Surv</span>(</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">event =</span> (dataset[data_split<span class="sc">$</span>train, <span class="fu">get</span>(<span class="st">&quot;status&quot;</span>)] <span class="sc">|&gt;</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.character</span>() <span class="sc">|&gt;</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.integer</span>()),</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> dataset[data_split<span class="sc">$</span>train, <span class="fu">get</span>(<span class="st">&quot;time&quot;</span>)],</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;right&quot;</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>split_vector_train <span class="ot">&lt;-</span> splitTools<span class="sc">::</span><span class="fu">multi_strata</span>(</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">df =</span> dataset[data_split<span class="sc">$</span>train, .SD, <span class="at">.SDcols =</span> surv_cols],</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;kmeans&quot;</span>,</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">4</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>test_x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> .,</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>  dataset[data_split<span class="sc">$</span>test, .SD, <span class="at">.SDcols =</span> <span class="fu">setdiff</span>(feature_cols, surv_cols[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])]</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>test_y <span class="ot">&lt;-</span> survival<span class="sc">::</span><span class="fu">Surv</span>(</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">event =</span> (dataset[data_split<span class="sc">$</span>test, <span class="fu">get</span>(<span class="st">&quot;status&quot;</span>)] <span class="sc">|&gt;</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.character</span>() <span class="sc">|&gt;</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.integer</span>()),</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> dataset[data_split<span class="sc">$</span>test, <span class="fu">get</span>(<span class="st">&quot;time&quot;</span>)],</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;right&quot;</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 <h2 id="generate-training-data-folds">Generate Training Data Folds</h2>
 <div class="cell">
@@ -343,10 +345,10 @@ text-decoration: underline; }
 <span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">colsample_bytree =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="dv">1</span>),</span>
 <span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">min_child_weight =</span> <span class="fu">c</span>(<span class="dv">1</span>L, <span class="dv">10</span>L),</span>
 <span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">learning_rate =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.2</span>),</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span>  <span class="fu">c</span>(<span class="dv">1</span>L, <span class="dv">10</span>L)</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span> <span class="fu">c</span>(<span class="dv">1</span>L, <span class="dv">10</span>L)</span>
 <span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>optim_args <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">iters.n =</span> ncores,</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_iter =</span> ncores,</span>
 <span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">kappa =</span> <span class="fl">3.5</span>,</span>
 <span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">acq =</span> <span class="st">&quot;ucb&quot;</span></span>
 <span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>

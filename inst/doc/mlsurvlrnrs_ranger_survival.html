@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.12">
+<meta name="generator" content="quarto-1.9.16">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -247,7 +247,7 @@ text-decoration: underline; }
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.bayesian.max_init&quot;</span> <span class="ot">=</span> <span class="dv">10</span>L)</span></code></pre></div>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.bayesian.max_init&quot;</span> <span class="ot">=</span> <span class="dv">4</span>L)</span></code></pre></div>
 </div>
 <h2 id="generate-training--and-test-data">Generate Training- and Test Data</h2>
 <div class="cell">
@@ -341,7 +341,7 @@ text-decoration: underline; }
 <span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">sample.fraction =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">1.</span>)</span>
 <span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>optim_args <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">iters.n =</span> ncores,</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_iter =</span> ncores,</span>
 <span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">kappa =</span> <span class="fl">3.5</span>,</span>
 <span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">acq =</span> <span class="st">&quot;ucb&quot;</span></span>
 <span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>

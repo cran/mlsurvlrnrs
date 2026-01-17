@@ -7,8 +7,17 @@ seed <- 123
 surv_cols <- c("status", "time", "rx")
 
 feature_cols <- colnames(dataset)[3:(ncol(dataset) - 1)]
-cat_vars <- c("sex", "obstruct", "perfor", "adhere", "differ", "extent",
-              "surg", "node4", "rx")
+cat_vars <- c(
+  "sex",
+  "obstruct",
+  "perfor",
+  "adhere",
+  "differ",
+  "extent",
+  "surg",
+  "node4",
+  "rx"
+)
 
 param_list_ranger <- expand.grid(
   sample.fraction = seq(0.6, 1, .2),
@@ -44,8 +53,8 @@ train_x <- data.matrix(
 )
 train_y <- survival::Surv(
   event = (dataset[, get("status")] |>
-             as.character() |>
-             as.integer()),
+    as.character() |>
+    as.integer()),
   time = dataset[, get("time")],
   type = "right"
 )
@@ -57,7 +66,7 @@ fold_list <- splitTools::create_folds(
   seed = seed
 )
 
-options("mlexperiments.bayesian.max_init" = 10L)
+options("mlexperiments.bayesian.max_init" = 4L)
 
 # ###########################################################################
 # %% TUNING
@@ -68,10 +77,10 @@ ranger_bounds <- list(
   min.node.size = c(1L, 10L),
   mtry = c(2L, 10L),
   num.trees = c(1L, 10L),
-  max.depth =  c(1L, 10L)
+  max.depth = c(1L, 10L)
 )
 optim_args <- list(
-  iters.n = ncores,
+  n_iter = ncores,
   kappa = 3.5,
   acq = "ucb"
 )
@@ -80,39 +89,39 @@ optim_args <- list(
 # %% NESTED CV
 # ###########################################################################
 
-test_that(
-  desc = "test nested cv, bayesian - surv_ranger_cox",
-  code = {
+test_that(desc = "test nested cv, bayesian - surv_ranger_cox", code = {
+  testthat::skip_if_not_installed("rBayesianOptimizaion")
+  testthat::skip_if_not_installed("ranger")
+  testthat::skip_if_not_installed("glmnet")
 
-    surv_ranger_cox_optimizer <- mlexperiments::MLNestedCV$new(
-      learner = LearnerSurvRangerCox$new(),
-      strategy = "bayesian",
-      fold_list = fold_list,
-      k_tuning = 3L,
-      ncores = ncores,
-      seed = seed
-    )
+  surv_ranger_cox_optimizer <- mlexperiments::MLNestedCV$new(
+    learner = LearnerSurvRangerCox$new(),
+    strategy = "bayesian",
+    fold_list = fold_list,
+    k_tuning = 3L,
+    ncores = ncores,
+    seed = seed
+  )
 
-    surv_ranger_cox_optimizer$parameter_bounds <- ranger_bounds
-    surv_ranger_cox_optimizer$parameter_grid <- param_list_ranger
-    surv_ranger_cox_optimizer$split_type <- "stratified"
-    surv_ranger_cox_optimizer$split_vector <- split_vector
-    surv_ranger_cox_optimizer$optim_args <- optim_args
+  surv_ranger_cox_optimizer$parameter_bounds <- ranger_bounds
+  surv_ranger_cox_optimizer$parameter_grid <- param_list_ranger
+  surv_ranger_cox_optimizer$split_type <- "stratified"
+  surv_ranger_cox_optimizer$split_vector <- split_vector
+  surv_ranger_cox_optimizer$optim_args <- optim_args
 
-    surv_ranger_cox_optimizer$performance_metric <- c_index
+  surv_ranger_cox_optimizer$performance_metric <- c_index
 
-    # set data
-    surv_ranger_cox_optimizer$set_data(
-      x = train_x,
-      y = train_y
-    )
+  # set data
+  surv_ranger_cox_optimizer$set_data(
+    x = train_x,
+    y = train_y
+  )
 
-    cv_results <- surv_ranger_cox_optimizer$execute()
-    expect_type(cv_results, "list")
-    expect_equal(dim(cv_results), c(3, 7))
-    expect_true(inherits(
-      x = surv_ranger_cox_optimizer$results,
-      what = "mlexCV"
-    ))
-  }
-)
+  cv_results <- surv_ranger_cox_optimizer$execute()
+  expect_type(cv_results, "list")
+  expect_equal(dim(cv_results), c(3, 7))
+  expect_true(inherits(
+    x = surv_ranger_cox_optimizer$results,
+    what = "mlexCV"
+  ))
+})

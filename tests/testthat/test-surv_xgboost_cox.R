@@ -60,8 +60,8 @@ fold_list <- splitTools::create_folds(
 )
 
 options("mlexperiments.bayesian.max_init" = 10L)
-options("mlexperiments.optim.xgb.nrounds" = 100L)
-options("mlexperiments.optim.xgb.early_stopping_rounds" = 10L)
+options("mlexperiments.optim.xgb.nrounds" = 20L)
+options("mlexperiments.optim.xgb.early_stopping_rounds" = 5L)
 # ###########################################################################
 # %% TUNING
 # ###########################################################################
@@ -76,7 +76,7 @@ xgboost_bounds <- list(
   max_depth = c(1L, 10L)
 )
 optim_args <- list(
-  iters.n = ncores,
+  n_iter = ncores,
   kappa = 3.5,
   acq = "ucb"
 )
@@ -86,6 +86,10 @@ optim_args <- list(
 # ###########################################################################
 
 test_that(desc = "test nested cv, bayesian - surv_xgboost_cox", code = {
+  testthat::skip_if_not_installed("rBayesianOptimizaion")
+  testthat::skip_if_not_installed("xgboost")
+  testthat::skip_if_not_installed("glmnet")
+
   surv_xgboost_cox_optimizer <- mlexperiments::MLNestedCV$new(
     learner = LearnerSurvXgboostCox$new(
       metric_optimization_higher_better = FALSE
@@ -136,6 +140,9 @@ learner_args <- list(
 
 
 test_that(desc = "test nested cv, grid - surv_xgboost_cox", code = {
+  testthat::skip_if_not_installed("xgboost")
+  testthat::skip_if_not_installed("glmnet")
+
   surv_xgboost_cox_optimizer <- mlexperiments::MLNestedCV$new(
     learner = LearnerSurvXgboostCox$new(
       metric_optimization_higher_better = FALSE
